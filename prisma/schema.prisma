@@ -1,38 +1,228 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
+//---PreFix Tables with project prefix ---//
+//--- START NEW TABLES HERE ---//
+
+// Admins can send private messages to group of people as well as to approved channels
+
+model Family {
+  id     Int      @id
+  name   String
+  Person Person[]
 }
 
-model User {
-  id    String @id @default(cuid())
-  email String @unique
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  password Password?
-  notes    Note[]
+model Person {
+  id         Int       @id
+  firstName  String
+  lastName   String
+  middleName String
+  nickName   String
+  salutation String
+  suffix     String
+  email      String
+  email2     String
+  homePhone  String
+  cellPhone  String
+  Student    Student?
+  Employee   Employee?
+  Parent     Parent?
+  Family     Family[]
 }
 
-model Password {
-  hash String
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId String @unique
+model Student {
+  id                              Int                @id
+  Person                          Person             @relation(fields: [id], references: [id])
+  grade                           String
+  Enrollment                      Enrollment[]
+  SchoolInformation               SchoolInformation? @relation(fields: [schoolInformationConfigSchoolID], references: [configSchoolID])
+  schoolInformationConfigSchoolID Int?
+  ParentStudent                   ParentStudent[]
 }
 
-model Note {
-  id    String @id @default(cuid())
-  title String
-  body  String
+model Employee {
+  id                              Int                @id
+  Person                          Person             @relation(fields: [id], references: [id])
+  administrator                   Boolean            @default(false)
+  upperSchool                     Boolean            @default(false)
+  lowerSchool                     Boolean            @default(false)
+  staff                           Boolean            @default(false)
+  substitute                      Boolean            @default(false)
+  faculty                         Boolean            @default(false)
+  AidedClasses                    Class[]            @relation("Aide")
+  SecondaryClasses                Class[]            @relation("Teacher2")
+  Classes                         Class[]            @relation("Teacher")
+  SchoolInformation               SchoolInformation? @relation(fields: [schoolInformationConfigSchoolID], references: [configSchoolID])
+  schoolInformationConfigSchoolID Int?
+}
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model ParentStudent {
+  parentId       Int
+  studentId      Int
+  correspondence Boolean
+  custody        Boolean
+  grandparent    Boolean
+  relationship   String
+  Parent         Parent  @relation(fields: [parentId], references: [id])
+  Student        Student @relation(fields: [studentId], references: [id])
 
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
-  userId String
+  @@id([parentId, studentId])
+  @@unique([parentId, studentId])
+}
+
+model Parent {
+  id            Int             @id
+  Person        Person          @relation(fields: [id], references: [id])
+  ParentStudent ParentStudent[]
+}
+
+model Class {
+  aideId     Int?
+  closed     Boolean      @default(false)
+  courseId   Int
+  name       String
+  pattern    Int?
+  section    String?
+  teacherId  Int?
+  term1      Boolean      @default(false)
+  term2      Boolean      @default(false)
+  term3      Boolean      @default(false)
+  term4      Boolean      @default(false)
+  term5      Boolean      @default(false)
+  term6      Boolean      @default(false)
+  yearId     Int?
+  teacher2Id Int?
+  classId    Int          @id
+  Aide       Employee?    @relation("Aide", fields: [aideId], references: [id])
+  Course     Course       @relation(fields: [courseId], references: [courseId])
+  Teacher2   Employee?    @relation("Teacher2", fields: [teacher2Id], references: [id])
+  Teacher    Employee?    @relation("Teacher", fields: [teacherId], references: [id])
+  SchoolYear SchoolYear?  @relation(fields: [yearId], references: [yearId])
+  Enrollment Enrollment[]
+}
+
+model Course {
+  levelID      Int?
+  title        String
+  abbreviation String
+  homeRoom     Boolean @default(false)
+  schoolCode   String?
+  department   String?
+  active       Boolean @default(false)
+  elective     Boolean @default(false)
+  hs           Boolean @default(false)
+  preSchool    Boolean @default(false)
+  elementary   Boolean @default(false)
+  middleSchool Boolean @default(false)
+  courseType   String?
+  departmentId Int?
+  description  String?
+  courseId     Int     @id
+  Class        Class[]
+}
+
+model Enrollment {
+  // altYearId  Int?
+  classId    Int
+  enrolled   Boolean  @default(false)
+  enrolled1  Boolean  @default(false)
+  enrolled2  Boolean  @default(false)
+  enrolled3  Boolean  @default(false)
+  enrolled4  Boolean  @default(false)
+  enrolled5  Boolean  @default(false)
+  enrolled6  Boolean  @default(false)
+  gradeLevel String?
+  studentId  Int
+  // SchoolYear SchoolYear? @relation(fields: [altYearId], references: [yearId], onDelete: Cascade)
+  Class      Class    @relation(fields: [classId], references: [classId], onDelete: Cascade)
+  Student    Student? @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  SchoolYear       SchoolYear? @relation(fields: [schoolYearYearId], references: [yearId])
+  schoolYearYearId Int?
+  @@unique([studentId, classId])
+  @@index([studentId, classId])
+}
+
+model SchoolInformation {
+  active         Boolean
+  address        String
+  city           String
+  configSchoolID Int        @id
+  defaultTermId  Int        @unique
+  defaultYearId  Int        @unique
+  districtName   String
+  email          String
+  nextYearId     Int        @unique
+  parentAlert    Boolean
+  pwTermID       Int
+  pwTermID2      Int
+  pwYearID       Int
+  schoolCode     String     @unique
+  schoolLMS      Boolean
+  schoolName     String
+  state          String
+  zip            String
+  fax            String
+  phone          String
+  SchoolTerm     SchoolTerm @relation(fields: [defaultTermId, defaultYearId], references: [termId, yearId])
+  SchoolYear     SchoolYear @relation("facts_schoolInformation_defaultYearIdTofacts_schoolYear", fields: [defaultYearId], references: [yearId])
+  NextSchoolYear SchoolYear @relation("facts_schoolInformation_nextYearIdTofacts_schoolYear", fields: [nextYearId], references: [yearId])
+  Employees      Employee[]
+  Students       Student[]
+
+  @@unique([defaultTermId, defaultYearId])
+}
+
+model SchoolTerm {
+  termId            Int
+  yearId            Int
+  name              String
+  firstDay          DateTime
+  lastDay           DateTime
+  schoolCode        String
+  semesterId        Int
+  uniqueTermId      Int?
+  SchoolYear        SchoolYear         @relation(fields: [yearId], references: [yearId])
+  SchoolInformation SchoolInformation?
+
+  @@unique([termId, yearId])
+  @@index([termId, yearId])
+}
+
+model SchoolYear {
+  yearName          String
+  yearId            Int                @id
+  firstDay          DateTime
+  lastDay           DateTime
+  schoolCode        String
+  allowInquiry      Boolean
+  blockAcademicYear Boolean
+  Class             Class[]
+  Enrollment        Enrollment[]
+  SchoolYear        SchoolInformation? @relation("facts_schoolInformation_defaultYearIdTofacts_schoolYear")
+  NextSchoolYear    SchoolInformation? @relation("facts_schoolInformation_nextYearIdTofacts_schoolYear")
+  SchoolTerm        SchoolTerm[]
+}
+
+model Setting {
+  id    String @id @default(uuid())
+  name  String @unique
+  value String // JSON encoded
+
+  @@index([name])
+}
+
+// --- FACTS TABLES BELOW ---//
+// --- !!!DO NOT EDIT!!! ---//
+
+model FactsLoadedTable {
+  id        String   @id
+  createdAt DateTime
+  table     String
 }

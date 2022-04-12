@@ -1,53 +1,18 @@
-import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { db } from "../app/models/db.server";
+import { main } from "../app/util/dbLoader.server";
 
-const prisma = new PrismaClient();
+// get list of tables to load
 
-async function seed() {
-  const email = "rachel@remix.run";
+// cycle through the tables
+const runLoaders = async () => {
+  await main();
+  // for (let type of dbLoader.loaders) {
+  //   console.log(`Loading table: ${type}`);
+  //   const res = await dbLoader.runLoaded<any>(type);
+  //   console.log(`Table '${type}' loaded.`);
+  //   console.log(`\t${res.length} entries loaded`);
+  //   console.log("\n");
+  // }
+};
 
-  // cleanup the existing database
-  await prisma.user.delete({ where: { email } }).catch(() => {
-    // no worries if it doesn't exist yet
-  });
-
-  const hashedPassword = await bcrypt.hash("racheliscool", 10);
-
-  const user = await prisma.user.create({
-    data: {
-      email,
-      password: {
-        create: {
-          hash: hashedPassword,
-        },
-      },
-    },
-  });
-
-  await prisma.note.create({
-    data: {
-      title: "My first note",
-      body: "Hello, world!",
-      userId: user.id,
-    },
-  });
-
-  await prisma.note.create({
-    data: {
-      title: "My second note",
-      body: "Hello, world!",
-      userId: user.id,
-    },
-  });
-
-  console.log(`Database has been seeded. 🌱`);
-}
-
-seed()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+runLoaders();
