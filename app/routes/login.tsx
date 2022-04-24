@@ -1,183 +1,101 @@
-import type {
-  ActionFunction,
-  LoaderFunction,
-  MetaFunction,
-} from "@remix-run/node";
-import { json, redirect } from "@remix-run/node";
-import { Form, Link, useActionData, useSearchParams } from "@remix-run/react";
-import * as React from "react";
+import { useLoaderData, Outlet } from "@remix-run/react";
+import { ActionFunction, LoaderFunction } from "@remix-run/server-runtime";
+import {
+  AUTHENTICATE_STRATEGY_EMAIL_FORM,
+  AUTHENTICATE_STRATEGY_EMAIL_LINK,
+  AUTHENTICATE_STRATEGY_GOOGLE_FACULTY,
+  AUTHENTICATE_STRATEGY_GOOGLE_STUDENT,
+  authenticator,
+} from "~/services/auth.server";
+import * as Auth from "~/config/auth.server";
+import { getSession } from "~/services/session.server";
 
-import { createUserSession, getUserId } from "~/session.server";
-// import { verifyLogin } from "~/models/user.server";
-import { validateEmail } from "~/utils";
+export const action: ActionFunction = async ({ request, context }) => {
+  switch (Auth.config.auth_type) {
+    case AUTHENTICATE_STRATEGY_EMAIL_FORM:
+      const authenticated = await authenticator.authenticate(
+        Auth.config.auth_type,
+        request,
+        {
+          successRedirect: Auth.config.successRedirect,
+          failureRedirect: Auth.config.failureRedirect,
+        }
+      );
 
-export const loader: LoaderFunction = async ({ request }) => {
-  const userId = await getUserId(request);
-  if (userId) return redirect("/");
-  return json({});
+      if (authenticated) {
+        return authenticated;
+      }
+
+      return { msg: "nope" };
+
+    case AUTHENTICATE_STRATEGY_EMAIL_LINK:
+      return await authenticator.authenticate(
+        AUTHENTICATE_STRATEGY_EMAIL_LINK,
+        request,
+        {
+          successRedirect: "/login/link",
+          // If this is not set, any error will be throw and the ErrorBoundary will be
+          // rendered.
+          failureRedirect: "/login",
+        }
+      );
+
+    default:
+      throw new Error("Invalid Authentication Type");
+  }
 };
 
-interface ActionData {
-  errors?: {
-    email?: string;
-    password?: string;
-  };
-}
+type LoaderData = { isEmailForm: boolean };
+export const loader: LoaderFunction = async ({
+  request,
+}): Promise<LoaderData | undefined> => {
+  const isEmailForm =
+    Auth.config.auth_type === AUTHENTICATE_STRATEGY_EMAIL_FORM ||
+    Auth.config.auth_type === AUTHENTICATE_STRATEGY_EMAIL_LINK;
 
-export const action: ActionFunction = async ({ request }) => {
-  // const formData = await request.formData();
-  // const email = formData.get("email");
-  // const password = formData.get("password");
-  // const redirectTo = formData.get("redirectTo");
-  // const remember = formData.get("remember");
-  // if (!validateEmail(email)) {
-  //   return json<ActionData>(
-  //     { errors: { email: "Email is invalid" } },
-  //     { status: 400 }
-  //   );
-  // }
-  // if (typeof password !== "string") {
-  //   return json<ActionData>(
-  //     { errors: { password: "Password is required" } },
-  //     { status: 400 }
-  //   );
-  // }
-  // if (password.length < 8) {
-  //   return json<ActionData>(
-  //     { errors: { password: "Password is too short" } },
-  //     { status: 400 }
-  //   );
-  // }
-  // // const user = await verifyLogin(email, password);
-  // if (!user) {
-  //   return json<ActionData>(
-  //     { errors: { email: "Invalid email or password" } },
-  //     { status: 400 }
-  //   );
-  // }
-  // return createUserSession({
-  //   request,
-  //   userId: user.id,
-  //   remember: remember === "on" ? true : false,
-  //   redirectTo: typeof redirectTo === "string" ? redirectTo : "/notes",
-  // });
+  return { isEmailForm };
 };
 
-export const meta: MetaFunction = () => {
-  return {
-    title: "Login",
-  };
-};
-
-export default function LoginPage() {
-  const [searchParams] = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/notes";
-  const actionData = useActionData() as ActionData;
-  const emailRef = React.useRef<HTMLInputElement>(null);
-  const passwordRef = React.useRef<HTMLInputElement>(null);
-
-  React.useEffect(() => {
-    if (actionData?.errors?.email) {
-      emailRef.current?.focus();
-    } else if (actionData?.errors?.password) {
-      passwordRef.current?.focus();
-    }
-  }, [actionData]);
+export default function LoginRoute() {
+  const data = useLoaderData<LoaderData>();
 
   return (
-    <div className="flex min-h-full flex-col justify-center">
-      <div className="mx-auto w-full max-w-md px-8">
-        <Form method="post" className="space-y-6" noValidate>
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Email address
-            </label>
-            <div className="mt-1">
-              <input
-                ref={emailRef}
-                id="email"
-                required
-                autoFocus={true}
-                name="email"
-                type="email"
-                autoComplete="email"
-                aria-invalid={actionData?.errors?.email ? true : undefined}
-                aria-describedby="email-error"
-                className="w-full rounded border border-gray-500 px-2 py-1 text-lg"
-              />
-              {actionData?.errors?.email && (
-                <div className="pt-1 text-red-700" id="email-error">
-                  {actionData.errors.email}
-                </div>
+    <div className="hero min-h-screen bg-base-200">
+      <div className="hero-content flex-col justify-center lg:w-[950px] lg:flex-row">
+        <div className="text-center md:w-[650px] lg:text-left">
+          <div className="flex flex-col place-items-center md:flex-row">
+            <img src="/logo.png" className=" h-20 w-20 md:h-40 md:w-40" />
+            <div className="flex flex-col">
+              <h1 className="mb-5 text-4xl font-bold md:text-5xl">JPG Votes</h1>
+              {data.isEmailForm ? (
+                <p className="">
+                  Welcome! Please login using the email we have on file. If you
+                  have any difficulties, please contact Mr. Baker at{" "}
+                  <a
+                    className="link link-secondary"
+                    href="mailto:cbaker@jpgacademy.org?subject=JPG Votes Help"
+                  >
+                    cbaker@jpgacademy.org
+                  </a>
+                  .
+                </p>
+              ) : (
+                <p className="">
+                  Welcome! Please login using the email we have on file. If you
+                  have any difficulties, please contact Mr. Baker at{" "}
+                  <a
+                    className="link link-secondary"
+                    href="mailto:cbaker@jpgacademy.org?subject=JPG Votes Help"
+                  >
+                    cbaker@jpgacademy.org
+                  </a>
+                  .
+                </p>
               )}
             </div>
           </div>
-
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Password
-            </label>
-            <div className="mt-1">
-              <input
-                id="password"
-                ref={passwordRef}
-                name="password"
-                type="password"
-                autoComplete="current-password"
-                aria-invalid={actionData?.errors?.password ? true : undefined}
-                aria-describedby="password-error"
-                className="w-full rounded border border-gray-500 px-2 py-1 text-lg"
-              />
-              {actionData?.errors?.password && (
-                <div className="pt-1 text-red-700" id="password-error">
-                  {actionData.errors.password}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <input type="hidden" name="redirectTo" value={redirectTo} />
-          <button
-            type="submit"
-            className="w-full rounded bg-blue-500  py-2 px-4 text-white hover:bg-blue-600 focus:bg-blue-400"
-          >
-            Log in
-          </button>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center">
-              <input
-                id="remember"
-                name="remember"
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <label
-                htmlFor="remember"
-                className="ml-2 block text-sm text-gray-900"
-              >
-                Remember me
-              </label>
-            </div>
-            <div className="text-center text-sm text-gray-500">
-              Don't have an account?{" "}
-              <Link
-                className="text-blue-500 underline"
-                to={{
-                  pathname: "/join",
-                  search: searchParams.toString(),
-                }}
-              >
-                Sign up
-              </Link>
-            </div>
-          </div>
-        </Form>
+        </div>
+        <Outlet />
       </div>
     </div>
   );
