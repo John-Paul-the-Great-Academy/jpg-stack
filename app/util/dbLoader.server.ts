@@ -10,7 +10,7 @@ import type {
   SchoolInformation,
   SchoolTerm,
   SchoolYear,
-} from "./facts.server"
+} from "./facts.server";
 import {
   getClasses,
   getCourses,
@@ -26,47 +26,47 @@ import {
   getStudents,
   getTerms,
   getYears,
-} from "./facts.server"
-import { db } from "../models/db.server"
+} from "./facts.server";
+import { db } from "../services/db.server";
 
 export const updateFactsLoadedTable = async (table: string) => {
   try {
-    const dbTable = `facts_${table.toLowerCase()}`
+    const dbTable = `facts_${table.toLowerCase()}`;
     // TODO: FIX
     // await db.factsLoadedTable.create({
     //   data: {
     //     table: dbTable,
     //   },
     // });
-    return true
+    return true;
   } catch (error) {
-    console.log(error)
-    return false
+    console.log(error);
+    return false;
   }
-}
+};
 
-export type LoadError = { error: string; errorType: string }
-export type LoadedData<T> = T | LoadError
+export type LoadError = { error: string; errorType: string };
+export type LoadedData<T> = T | LoadError;
 ////////////////
 
 export async function main() {
   console.log(
     "pulling from FACTS: students, staff, schoolInformation, terms, years"
-  )
+  );
   const [students, staff, schoolInformation, terms, years] = await Promise.all([
     getStudents(),
     getStaff(),
     getSchoolInformation(),
     getTerms(),
     getYears(),
-  ])
-  const defaultYear = schoolInformation.nextYearId
-  const studentIds = students.map(s => s.studentId).join("|")
-  const staffIds = staff.map(s => s.staffId).join("|")
+  ]);
+  const defaultYear = schoolInformation.nextYearId;
+  const studentIds = students.map((s) => s.studentId).join("|");
+  const staffIds = staff.map((s) => s.staffId).join("|");
 
   console.log(
     "pulling from FACTS: studentPersons, personFamilies, parentStudents, staffPersons, classes, courses"
-  )
+  );
   const [
     studentPersons,
     personFamilies,
@@ -81,36 +81,36 @@ export async function main() {
     getStaffPersons(staffIds),
     getClasses(defaultYear),
     getCourses(),
-  ])
+  ]);
   const familyIds = Array.from(
-    new Set([...personFamilies.map(p => p.familyId)])
-  ).join("|")
-  const parentIds = parentStudents.map(p => p.parentID).join("|")
-  const classIds = classes.map(c => c.classId).join("|")
+    new Set([...personFamilies.map((p) => p.familyId)])
+  ).join("|");
+  const parentIds = parentStudents.map((p) => p.parentID).join("|");
+  const classIds = classes.map((c) => c.classId).join("|");
 
-  console.log("pulling from FACTS: families, parentPersons, enrollments")
+  console.log("pulling from FACTS: families, parentPersons, enrollments");
   const [families, parentPersons, enrollments] = await Promise.all([
     getFamilies(familyIds),
     getParentPersons(parentIds),
     getEnrollments(classIds),
-  ])
+  ]);
 
-  console.log("Loading DB")
+  console.log("Loading DB");
   try {
-    await loadDBYears(years)
-    await loadDBTerms(terms)
-    await loadDBSchoolInformation(schoolInformation)
-    await loadDBFamily(families)
-    await loadDBParentPerson(parentPersons)
-    await loadDBParent(parentPersons)
-    await loadDBStudentPersons(students, studentPersons)
-    await loadDBStudents(students, studentPersons, schoolInformation)
-    await loadDBParentStudentRelationship(parentStudents)
-    await loadDBEmployeePerson(staffPersons)
-    await loadDBEmployee(staff, schoolInformation)
-    await loadDBCourses(courses)
-    await loadDBClasses(classes, enrollments)
-    await loadDBEnrollments(enrollments, students)
+    await loadDBYears(years);
+    await loadDBTerms(terms);
+    await loadDBSchoolInformation(schoolInformation);
+    await loadDBFamily(families);
+    await loadDBParentPerson(parentPersons);
+    await loadDBParent(parentPersons);
+    await loadDBStudentPersons(students, studentPersons);
+    await loadDBStudents(students, studentPersons, schoolInformation);
+    await loadDBParentStudentRelationship(parentStudents);
+    await loadDBEmployeePerson(staffPersons);
+    await loadDBEmployee(staff, schoolInformation);
+    await loadDBCourses(courses);
+    await loadDBClasses(classes, enrollments);
+    await loadDBEnrollments(enrollments, students);
     // await Promise.all([loadDBYears(years), loadDBTerms(terms)]);
 
     // await Promise.all([
@@ -133,10 +133,10 @@ export async function main() {
     // await loadDBClasses(classes, enrollments);
     // await loadDBEnrollments(enrollments, students);
   } catch (error) {
-    console.log(error)
-    return 0
+    console.log(error);
+    return 0;
   }
-  console.log("DB Loaded")
+  console.log("DB Loaded");
 }
 
 async function loadDBStudents(
@@ -147,10 +147,10 @@ async function loadDBStudents(
   try {
     return (
       await db.$transaction(
-        students.map(student => {
+        students.map((student) => {
           const person = studentPersons.find(
-            s => s.personId === student.studentId
-          )
+            (s) => s.personId === student.studentId
+          );
           return db.student.upsert({
             create: {
               id: student.studentId,
@@ -164,13 +164,13 @@ async function loadDBStudents(
             where: {
               id: student.studentId,
             },
-          })
+          });
         })
       )
-    ).length
+    ).length;
   } catch (error) {
-    console.log(error)
-    return 0
+    console.log(error);
+    return 0;
   }
 }
 
@@ -181,7 +181,7 @@ async function loadDBStudentPersons(
   try {
     return (
       await db.$transaction(
-        studentPersons.map(student => {
+        studentPersons.map((student) => {
           return db.person.upsert({
             create: {
               id: student.personId,
@@ -211,13 +211,13 @@ async function loadDBStudentPersons(
             where: {
               id: student.personId,
             },
-          })
+          });
         })
       )
-    ).length
+    ).length;
   } catch (error) {
-    console.log(error)
-    return 0
+    console.log(error);
+    return 0;
   }
 }
 
@@ -268,11 +268,11 @@ async function loadDBSchoolInformation(schoolInformation: SchoolInformation) {
         phone: schoolInformation.phone,
       },
       where: { configSchoolID: schoolInformation.configSchoolID },
-    })
-    return 1
+    });
+    return 1;
   } catch (error) {
-    console.log(error)
-    return 0
+    console.log(error);
+    return 0;
   }
 }
 
@@ -296,7 +296,7 @@ async function loadDBFamily(families: Family[]) {
   try {
     return (
       await db.$transaction(
-        families.map(family => {
+        families.map((family) => {
           return db.family.upsert({
             create: {
               id: family.familyID,
@@ -304,13 +304,13 @@ async function loadDBFamily(families: Family[]) {
             },
             update: { name: family.familyName || "" },
             where: { id: family.familyID },
-          })
+          });
         })
       )
-    ).length
+    ).length;
   } catch (error) {
-    console.log(error)
-    return 0
+    console.log(error);
+    return 0;
   }
 }
 
@@ -318,18 +318,18 @@ async function loadDBParent(parents: Person[]) {
   try {
     return (
       await db.$transaction(
-        parents.map(parent => {
+        parents.map((parent) => {
           return db.parent.upsert({
             create: { id: parent.personId },
             update: { id: parent.personId },
             where: { id: parent.personId },
-          })
+          });
         })
       )
-    ).length
+    ).length;
   } catch (error) {
-    console.log(error)
-    return 0
+    console.log(error);
+    return 0;
   }
 }
 
@@ -337,7 +337,7 @@ async function loadDBParentPerson(parentPersons: Person[]) {
   try {
     return (
       await db.$transaction(
-        parentPersons.map(person => {
+        parentPersons.map((person) => {
           return db.person.upsert({
             create: {
               id: person?.personId || 0,
@@ -365,13 +365,13 @@ async function loadDBParentPerson(parentPersons: Person[]) {
               email2: person?.email2 || "",
             },
             where: { id: person?.personId },
-          })
+          });
         })
       )
-    ).length
+    ).length;
   } catch (error) {
-    console.log(error)
-    return 0
+    console.log(error);
+    return 0;
   }
 }
 
@@ -381,7 +381,7 @@ async function loadDBParentStudentRelationship(
   try {
     return (
       await db.$transaction(
-        parentStudents.map(p => {
+        parentStudents.map((p) => {
           return db.parentStudent.upsert({
             create: {
               parentId: p.parentID,
@@ -403,13 +403,13 @@ async function loadDBParentStudentRelationship(
                 studentId: p.studentID,
               },
             },
-          })
+          });
         })
       )
-    ).length
+    ).length;
   } catch (error) {
-    console.log(error)
-    return 0
+    console.log(error);
+    return 0;
   }
 }
 
@@ -420,7 +420,7 @@ async function loadDBEmployee(
   try {
     return (
       await db.$transaction(
-        employees.map(e => {
+        employees.map((e) => {
           return db.employee.upsert({
             create: {
               id: e.staffId,
@@ -442,13 +442,13 @@ async function loadDBEmployee(
               schoolInformationConfigSchoolID: schoolInformation.configSchoolID,
             },
             where: { id: e.staffId },
-          })
+          });
         })
       )
-    ).length
+    ).length;
   } catch (error) {
-    console.log(error)
-    return 0
+    console.log(error);
+    return 0;
   }
 }
 
@@ -456,7 +456,7 @@ async function loadDBEmployeePerson(employees: Person[]) {
   try {
     return (
       await db.$transaction(
-        employees.map(person => {
+        employees.map((person) => {
           return db.person.upsert({
             create: {
               id: person.personId,
@@ -484,21 +484,21 @@ async function loadDBEmployeePerson(employees: Person[]) {
               email2: person.email2 || "",
             },
             where: { id: person.personId },
-          })
+          });
         })
       )
-    ).length
+    ).length;
   } catch (error) {
-    console.log(error)
-    return 0
+    console.log(error);
+    return 0;
   }
 }
 
 async function loadDBYears(years: SchoolYear[]) {
   try {
-    ;(
+    (
       await db.$transaction(
-        years.map(year => {
+        years.map((year) => {
           return db.schoolYear.upsert({
             create: {
               yearId: year.yearId,
@@ -518,13 +518,13 @@ async function loadDBYears(years: SchoolYear[]) {
               blockAcademicYear: year.blockAcademicYear,
             },
             where: { yearId: year.yearId },
-          })
+          });
         })
       )
-    ).length
+    ).length;
   } catch (error) {
-    console.log(error)
-    return 0
+    console.log(error);
+    return 0;
   }
 }
 
@@ -532,7 +532,7 @@ async function loadDBTerms(terms: SchoolTerm[]) {
   try {
     return (
       await db.$transaction(
-        terms.map(term => {
+        terms.map((term) => {
           return db.schoolTerm.upsert({
             create: {
               termId: term.termID,
@@ -558,13 +558,13 @@ async function loadDBTerms(terms: SchoolTerm[]) {
                 yearId: term.yearID,
               },
             },
-          })
+          });
         })
       )
-    ).length
+    ).length;
   } catch (error) {
-    console.log(error)
-    return 0
+    console.log(error);
+    return 0;
   }
 }
 
@@ -572,8 +572,8 @@ async function loadDBClasses(classes: Class[], enrollments: Enrollment[]) {
   try {
     return (
       await db.$transaction(
-        classes.map(c => {
-          const es = enrollments.filter(e => e.classId === c.classId)
+        classes.map((c) => {
+          const es = enrollments.filter((e) => e.classId === c.classId);
           return db.class.upsert({
             create: {
               ...(c.aideId && { aideId: c.aideId }),
@@ -639,13 +639,13 @@ async function loadDBClasses(classes: Class[], enrollments: Enrollment[]) {
               ...(c.instructor2Id && { teacher2Id: c.instructor2Id }),
             },
             where: { classId: c.classId },
-          })
+          });
         })
       )
-    ).length
+    ).length;
   } catch (error) {
-    console.log(error)
-    return 0
+    console.log(error);
+    return 0;
   }
 }
 
@@ -653,7 +653,7 @@ async function loadDBCourses(courses: Course[]) {
   try {
     return (
       await db.$transaction(
-        courses.map(c => {
+        courses.map((c) => {
           return db.course.upsert({
             create: {
               levelID: c.levelID,
@@ -691,13 +691,13 @@ async function loadDBCourses(courses: Course[]) {
               description: c.description,
             },
             where: { courseId: c.courseID },
-          })
+          });
         })
       )
-    ).length
+    ).length;
   } catch (error) {
-    console.log(error)
-    return 0
+    console.log(error);
+    return 0;
   }
 }
 
@@ -710,9 +710,10 @@ async function loadDBEnrollments(
       await db.$transaction(
         enrollments
           .filter(
-            e => students.find(s => s.studentId === e.studentId) && e.classId
+            (e) =>
+              students.find((s) => s.studentId === e.studentId) && e.classId
           )
-          .map(e => {
+          .map((e) => {
             return db.enrollment.upsert({
               create: {
                 // ...(e.altYearId && { altYearId: e.altYearId }),
@@ -744,12 +745,12 @@ async function loadDBEnrollments(
                   classId: e.classId,
                 },
               },
-            })
+            });
           })
       )
-    ).length
+    ).length;
   } catch (error) {
-    console.log(error)
-    return 0
+    console.log(error);
+    return 0;
   }
 }

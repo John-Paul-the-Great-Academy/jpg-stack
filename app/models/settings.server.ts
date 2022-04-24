@@ -1,4 +1,4 @@
-import { db } from "./db.server"
+import { db } from "../services/db.server";
 
 export async function setSetting(name: string, value: any) {
   try {
@@ -13,11 +13,11 @@ export async function setSetting(name: string, value: any) {
       update: {
         value: JSON.stringify(value),
       },
-    })
-    return true
+    });
+    return true;
   } catch (error) {
-    console.log(error)
-    return false
+    console.log(error);
+    return false;
   }
 }
 
@@ -27,24 +27,24 @@ export async function getSetting<T>(name: string): Promise<T | undefined> {
       where: {
         name,
       },
-    })
-    return JSON.parse(setting?.value || "") as T
+    });
+    return JSON.parse(setting?.value || "") as T;
   } catch (error) {
-    console.log(error)
-    return undefined
+    console.log(error);
+    return undefined;
   }
 }
 
 export async function getSettings() {
   try {
-    const settings = await db.setting.findMany()
-    const parsedSettings = settings.map(s => ({
+    const settings = await db.setting.findMany();
+    const parsedSettings = settings.map((s) => ({
       ...s,
       value: JSON.parse(s.value),
-    }))
-    return parsedSettings
+    }));
+    return parsedSettings;
   } catch (error) {
-    console.log(error)
-    return []
+    console.log(error);
+    return [];
   }
 }

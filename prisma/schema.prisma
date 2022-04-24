@@ -8,9 +8,25 @@ datasource db {
 }
 
 //---PreFix Tables with project prefix ---//
+//   @@map("APPNAME_TABLENAME")
 //--- START NEW TABLES HERE ---//
 
-// Admins can send private messages to group of people as well as to approved channels
+// Change these to add user types
+enum UserType {
+  ADMIN
+  DEFAULT
+}
+
+model User {
+  id      String   @id @default(uuid())
+  type    UserType
+  email   String
+  factsId Int      @unique
+  person  Person   @relation(fields: [factsId], references: [id], onDelete: Cascade)
+}
+
+// --- FACTS TABLES BELOW ---//
+// --- !!!DO NOT EDIT!!! ---//
 
 model Family {
   id     Int      @id
@@ -34,6 +50,7 @@ model Person {
   Employee   Employee?
   Parent     Parent?
   Family     Family[]
+  User       User[]
 }
 
 model Student {
@@ -217,9 +234,6 @@ model Setting {
 
   @@index([name])
 }
-
-// --- FACTS TABLES BELOW ---//
-// --- !!!DO NOT EDIT!!! ---//
 
 model FactsLoadedTable {
   id        String   @id

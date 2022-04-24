@@ -1,0 +1,13 @@
+import {
+  AUTHENTICATE_STRATEGY_EMAIL_FORM,
+  AUTHENTICATE_STRATEGY_EMAIL_LINK,
+  AUTHENTICATE_STRATEGY_GOOGLE_FACULTY,
+  AUTHENTICATE_STRATEGY_GOOGLE_ADMIN,
+  AUTHENTICATE_STRATEGY_GOOGLE_STUDENT,
+} from "~/services/auth.server";
+
+export const config = {
+  auth_type: AUTHENTICATE_STRATEGY_GOOGLE_ADMIN,
+  successRedirect: "/",
+  failureRedirect: "/login",
+};

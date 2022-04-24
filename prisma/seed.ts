@@ -1,4 +1,4 @@
-import { db } from "../app/models/db.server";
+import { db } from "../app/services/db.server";
 import { main } from "../app/util/dbLoader.server";
 
 // get list of tables to load
