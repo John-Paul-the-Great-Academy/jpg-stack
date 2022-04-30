@@ -112,7 +112,7 @@ export const FormSelect = React.forwardRef(function FormSelect(
         <span className="label-text">{label}</span>
       </label>
       <select
-        name="eligibilityGroup"
+        name={name}
         multiple={multiple}
         ref={ref}
         defaultValue={multiple ? undefined : defaultValue}
