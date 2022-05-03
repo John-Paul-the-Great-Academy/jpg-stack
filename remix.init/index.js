@@ -74,8 +74,8 @@ async function main({ rootDirectory }) {
       2
     ) + "\n";
 
-  const newLogin = login.replace(/APP_NAME/gi, APP_NAME);
-  const newRoot = rootRoute.replace(/APP_NAME/gi, APP_NAME);
+  const newLogin = login.replace(/APP_NAME/gi, APP_STRING);
+  const newRoot = rootRoute.replace(/APP_NAME/gi, APP_STRING);
 
   await Promise.all([
     fs.writeFile(FLY_TOML_PATH, toml.stringify(prodToml)),
