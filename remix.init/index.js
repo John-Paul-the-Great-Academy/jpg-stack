@@ -13,6 +13,11 @@ function escapeRegExp(string) {
 function getRandomString(length) {
   return crypto.randomBytes(length).toString("hex");
 }
+const camel2title = (camelCase) =>
+  camelCase
+    .replace(/([A-Z])/g, (match) => ` ${match}`)
+    .replace(/^./, (match) => match.toUpperCase())
+    .trim();
 
 async function main({ rootDirectory }) {
   const README_PATH = path.join(rootDirectory, "README.md");
@@ -20,6 +25,8 @@ async function main({ rootDirectory }) {
   const EXAMPLE_ENV_PATH = path.join(rootDirectory, ".env.example");
   const ENV_PATH = path.join(rootDirectory, ".env");
   const PACKAGE_JSON_PATH = path.join(rootDirectory, "package.json");
+  const LOGIN_PATH = path.join(rootDirectory, "app/routes/login.tsx");
+  const ROOT_PATH = path.join(rootDirectory, "app/root.tsx");
 
   const REPLACER = "blues-stack-template";
 
@@ -30,16 +37,22 @@ async function main({ rootDirectory }) {
     // get rid of anything that's not allowed in an app name
     .replace(/[^a-zA-Z0-9-_]/g, "-");
 
-  const [prodContent, readme, env, packageJson] = await Promise.all([
-    fs.readFile(FLY_TOML_PATH, "utf-8"),
-    fs.readFile(README_PATH, "utf-8"),
-    fs.readFile(EXAMPLE_ENV_PATH, "utf-8"),
-    fs.readFile(PACKAGE_JSON_PATH, "utf-8"),
-    fs.rm(path.join(rootDirectory, ".github/ISSUE_TEMPLATE"), {
-      recursive: true,
-    }),
-    fs.rm(path.join(rootDirectory, ".github/PULL_REQUEST_TEMPLATE.md")),
-  ]);
+  // convert DIR_NAME to space separated words
+  const APP_STRING = camel2title(DIR_NAME).replace(/[_.]/gi, " ");
+
+  const [prodContent, readme, env, packageJson, login, rootRoute] =
+    await Promise.all([
+      fs.readFile(FLY_TOML_PATH, "utf-8"),
+      fs.readFile(README_PATH, "utf-8"),
+      fs.readFile(EXAMPLE_ENV_PATH, "utf-8"),
+      fs.readFile(PACKAGE_JSON_PATH, "utf-8"),
+      fs.readFile(LOGIN_PATH, "utf-8"),
+      fs.readFile(ROOT_PATH, "utf-8"),
+      fs.rm(path.join(rootDirectory, ".github/ISSUE_TEMPLATE"), {
+        recursive: true,
+      }),
+      fs.rm(path.join(rootDirectory, ".github/PULL_REQUEST_TEMPLATE.md")),
+    ]);
 
   const newEnv = env.replace(
     /^SESSION_SECRET=.*$/m,
@@ -61,11 +74,16 @@ async function main({ rootDirectory }) {
       2
     ) + "\n";
 
+  const newLogin = login.replace(/APP_NAME/gi, APP_NAME);
+  const newRoot = rootRoute.replace(/APP_NAME/gi, APP_NAME);
+
   await Promise.all([
     fs.writeFile(FLY_TOML_PATH, toml.stringify(prodToml)),
     fs.writeFile(README_PATH, newReadme),
     fs.writeFile(ENV_PATH, newEnv),
     fs.writeFile(PACKAGE_JSON_PATH, newPackageJson),
+    fs.writeFile(LOGIN_PATH, newLogin),
+    fs.writeFile(ROOT_PATH, newRoot),
   ]);
 
   console.log(

@@ -66,14 +66,14 @@ export default function LoginRoute() {
           <div className="flex flex-col place-items-center md:flex-row">
             <img src="/logo.png" className=" h-20 w-20 md:h-40 md:w-40" />
             <div className="flex flex-col">
-              <h1 className="mb-5 text-4xl font-bold md:text-5xl">JPG Votes</h1>
+              <h1 className="mb-5 text-4xl font-bold md:text-5xl">APP_NAME</h1>
               {data.isEmailForm ? (
                 <p className="">
                   Welcome! Please login using the email we have on file. If you
                   have any difficulties, please contact Mr. Baker at{" "}
                   <a
                     className="link link-secondary"
-                    href="mailto:cbaker@jpgacademy.org?subject=JPG Votes Help"
+                    href="mailto:cbaker@jpgacademy.org?subject=APP_NAME Help"
                   >
                     cbaker@jpgacademy.org
                   </a>
@@ -85,7 +85,7 @@ export default function LoginRoute() {
                   have any difficulties, please contact Mr. Baker at{" "}
                   <a
                     className="link link-secondary"
-                    href="mailto:cbaker@jpgacademy.org?subject=JPG Votes Help"
+                    href="mailto:cbaker@jpgacademy.org?subject=APP_NAME Help"
                   >
                     cbaker@jpgacademy.org
                   </a>

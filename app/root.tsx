@@ -32,7 +32,7 @@ export const links: LinksFunction = () => {
 
 export const meta: MetaFunction = () => ({
   charset: "utf-8",
-  title: "JPG Votes",
+  title: "APP_NAME",
   viewport: "width=device-width,initial-scale=1",
 });
 

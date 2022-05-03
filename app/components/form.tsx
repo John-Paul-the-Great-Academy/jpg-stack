@@ -2,63 +2,79 @@ import { useCombobox, UseComboboxStateChange } from "downshift";
 import * as React from "react";
 import { useField, useIsSubmitting } from "remix-validated-form";
 import { ClientOnly } from "remix-utils";
+export type InputProps = {
+  label: string;
+  name: string;
+  optional?: boolean;
+  className?: string;
+  defaultValue?: string;
+  type?: string;
+  wide?: boolean;
+};
 
-export function FormInput({
-  name,
+export const FormInput: React.FC<
+  InputProps & JSX.IntrinsicElements["input"]
+> = ({
   label,
-  defaultValue,
+  name,
+  optional,
   className,
   type = "text",
-}: {
-  name: string;
-  label: string;
-  defaultValue?: string | number;
-  className?: string;
-  type?: React.HTMLInputTypeAttribute;
-}) {
-  const { error } = useField(name);
+  onChange,
+  wide,
+  ...rest
+}) => {
+  const { error, getInputProps } = useField(name);
 
   return (
-    <div className={`form-control w-full max-w-xs lg:max-w-lg ${className}`}>
-      <label className="label">
+    <div className={`form-control w-full max-w-xs lg:max-w-full ${className}`}>
+      <label className="label" htmlFor={name}>
         <span className="label-text">{label}</span>
       </label>
       <input
-        type={type}
-        defaultValue={defaultValue}
-        name={name}
-        className={`input input-bordered w-full max-w-xs lg:max-w-lg ${
-          error && "input-error"
-        }`}
+        {...getInputProps({
+          type: type,
+          id: name,
+          className: `input input-bordered w-full max-w-xs lg:max-w-full ${
+            error && "input-error"
+          } ${wide ? "lg:max-w-full" : ""}`,
+          ...rest,
+        })}
       />
       <label className="label">
         {error && <span className="label-text-alt text-error">{error}</span>}
       </label>
     </div>
   );
-}
+};
 
-export function FormTextarea({ name, label }: { name: string; label: string }) {
-  const { error } = useField(name);
+export const FormTextarea: React.FC<
+  InputProps & JSX.IntrinsicElements["textarea"]
+> = ({ label, name, className, ...rest }) => {
+  const { error, getInputProps } = useField(name);
 
   return (
-    <div className="form-control w-full max-w-xs lg:max-w-lg">
+    <div className="form-control w-full max-w-xs lg:max-w-full">
       <label className="label">
         <span className="label-text">{label}</span>
       </label>
       <textarea
-        className={`textarea textarea-bordered h-24 ${
-          error && "textarea-error lg:max-w-lg"
-        }`}
-        name={name}
+        {...getInputProps({
+          className: `textarea textarea-bordered h-24 ${
+            error && "textarea-error lg:max-w-full"
+          }`,
+          id: name,
+          ...rest,
+        })}
       ></textarea>
       <label className="label">
         {error && <span className="label-text-alt text-error">{error}</span>}
       </label>
     </div>
   );
-}
+};
 
+// TODO: Update
 export function FormToggle({
   name,
   label,
@@ -71,7 +87,7 @@ export function FormToggle({
   onChange?: React.ChangeEventHandler<HTMLInputElement>;
 }) {
   return (
-    <div className="form-control w-full max-w-xs lg:max-w-lg">
+    <div className="form-control w-full max-w-xs lg:max-w-full">
       <label className="label">
         <span className="label-text">{label}</span>
       </label>
@@ -86,48 +102,40 @@ export function FormToggle({
   );
 }
 
-export const FormSelect = React.forwardRef(function FormSelect(
-  {
-    name,
-    label,
-    defaultValue,
-    multiple,
-    className,
-    children,
-  }: {
-    name: string;
-    label: string;
-    defaultValue?: string;
-    multiple?: boolean;
-    className?: string;
-    children: React.ReactNode;
-  },
-  ref: React.ForwardedRef<HTMLSelectElement>
-) {
-  const { error } = useField(name);
+// type SelectProps = React.FC<InputProps & JSX.IntrinsicElements["select"]>
+// export const FormSelect = React.forwardRef<SelectProps>(( {label, name, className}, ref, ...rest) => {
+type SelectProps = InputProps & JSX.IntrinsicElements["select"];
+export const FormSelect = React.forwardRef<HTMLSelectElement, SelectProps>(
+  (
+    { label, name, className, children }: SelectProps,
+    ref?: React.ForwardedRef<HTMLSelectElement>
+  ) => {
+    const { error, getInputProps } = useField(name);
 
-  return (
-    <div className="form-control w-full max-w-xs">
-      <label className="label">
-        <span className="label-text">{label}</span>
-      </label>
-      <select
-        name={name}
-        multiple={multiple}
-        ref={ref}
-        defaultValue={multiple ? undefined : defaultValue}
-        className={`select select-bordered ${
-          error && "select-error"
-        } ${className}`}
-      >
-        {children}
-      </select>
-      <label className="label">
-        {error && <span className="label-text-alt text-error">{error}</span>}
-      </label>
-    </div>
-  );
-});
+    return (
+      <div className="form-control w-full max-w-xs lg:max-w-full">
+        <label className="label">
+          <span className="label-text">{label}</span>
+        </label>
+        <select
+          {...getInputProps({
+            id: name,
+            ref: ref,
+            className: `select select-bordered ${
+              error && "select-error"
+            } ${className}`,
+          })}
+        >
+          {children}
+        </select>
+        <label className="label">
+          {error && <span className="label-text-alt text-error">{error}</span>}
+        </label>
+      </div>
+    );
+  }
+);
+FormSelect.displayName = "FormSelect";
 
 export function FormAutoComplete({
   name,
@@ -178,7 +186,7 @@ export function FormAutoComplete({
         id: "form-control-nomination",
         "aria-owns": "menu-nomination",
       })}
-      className="form-control w-full max-w-xs lg:max-w-lg"
+      className="form-control w-full max-w-xs lg:max-w-full"
     >
       <label
         {...getLabelProps({
@@ -199,7 +207,7 @@ export function FormAutoComplete({
           "aria-labelledby": "label-nomination",
           ref: inputRef,
         })}
-        className={`input input-bordered w-full max-w-xs lg:max-w-lg ${
+        className={`input input-bordered w-full max-w-xs lg:max-w-full ${
           error && "input-error"
         }`}
       />
@@ -232,18 +240,22 @@ export function FormAutoComplete({
 
 export const FormSubmit = ({
   label = "Submit",
+  className,
+  wide,
   labelSubmitting = "Submitting...",
 }: {
   label?: string;
+  className?: string;
+  wide?: boolean;
   labelSubmitting?: string;
 }) => {
   const isSubmitting = useIsSubmitting();
   return (
-    <div className="form-control w-full max-w-xs pt-4">
+    <div className={`form-control w-full max-w-xs pt-4 ${className}`}>
       <button
         type="submit"
         disabled={isSubmitting}
-        className="btn btn-primary w-full"
+        className={`btn btn-primary ${wide ? "btn-block " : "w-auto"}`}
       >
         {isSubmitting ? labelSubmitting : label}
       </button>
