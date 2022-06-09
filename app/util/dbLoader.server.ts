@@ -6,6 +6,7 @@ import type {
   Student,
   Person,
   ParentStudent,
+  PersonFamily,
   Family,
   SchoolInformation,
   SchoolTerm,
@@ -70,6 +71,7 @@ export async function main() {
   const [
     studentPersons,
     personFamilies,
+    personFamiliesStaff,
     parentStudents,
     staffPersons,
     classes,
@@ -77,16 +79,22 @@ export async function main() {
   ] = await Promise.all([
     getStudentPersons(studentIds),
     getPersonFamilies(studentIds),
+    getPersonFamilies(staffIds),
     getParentStudents(studentIds),
     getStaffPersons(staffIds),
     getClasses(defaultYear),
     getCourses(),
   ]);
-  const familyIds = Array.from(
-    new Set([...personFamilies.map((p) => p.familyId)])
-  ).join("|");
   const parentIds = parentStudents.map((p) => p.parentID).join("|");
   const classIds = classes.map((c) => c.classId).join("|");
+  const personFamiliesParents = await getPersonFamilies(parentIds);
+  const familyIds = Array.from(
+    new Set([
+      ...personFamilies.map((p) => p.familyId),
+      ...personFamiliesStaff.map((p) => p.familyId),
+      ...personFamiliesParents.map((p) => p.familyId),
+    ])
+  ).join("|");
 
   console.log("pulling from FACTS: families, parentPersons, enrollments");
   const [families, parentPersons, enrollments] = await Promise.all([
@@ -108,6 +116,11 @@ export async function main() {
     await loadDBParentStudentRelationship(parentStudents);
     await loadDBEmployeePerson(staffPersons);
     await loadDBEmployee(staff, schoolInformation);
+    await loadDBFamilyPersons(
+      personFamilies,
+      personFamiliesParents,
+      personFamiliesStaff
+    );
     await loadDBCourses(courses);
     await loadDBClasses(classes, enrollments);
     await loadDBEnrollments(enrollments, students);
@@ -407,6 +420,74 @@ async function loadDBParentStudentRelationship(
         })
       )
     ).length;
+  } catch (error) {
+    console.log(error);
+    return 0;
+  }
+}
+
+async function loadDBFamilyPersons(
+  personFamilies: PersonFamily[],
+  personFamiliesStaff: PersonFamily[],
+  personFamiliesParents: PersonFamily[]
+) {
+  try {
+    let total = 0;
+    total += (
+      await db.$transaction(
+        personFamilies.map((pf) => {
+          return db.person.update({
+            where: {
+              id: pf.personId,
+            },
+            data: {
+              Family: {
+                connect: {
+                  id: pf.familyId,
+                },
+              },
+            },
+          });
+        })
+      )
+    ).length;
+    total += (
+      await db.$transaction(
+        personFamiliesParents.map((pf) => {
+          return db.person.update({
+            where: {
+              id: pf.personId,
+            },
+            data: {
+              Family: {
+                connect: {
+                  id: pf.familyId,
+                },
+              },
+            },
+          });
+        })
+      )
+    ).length;
+    total += (
+      await db.$transaction(
+        personFamiliesStaff.map((pf) => {
+          return db.person.update({
+            where: {
+              id: pf.personId,
+            },
+            data: {
+              Family: {
+                connect: {
+                  id: pf.familyId,
+                },
+              },
+            },
+          });
+        })
+      )
+    ).length;
+    return total;
   } catch (error) {
     console.log(error);
     return 0;
